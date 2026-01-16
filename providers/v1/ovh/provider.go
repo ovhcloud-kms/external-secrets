@@ -248,6 +248,12 @@ func (p *Provider) ValidateStore(store esv1.GenericStore) (admission.Warnings, e
 	if provider.Ovh == nil {
 		return nil, errors.New("ovh store provider is nil")
 	}
+	if provider.Ovh.Server == "" {
+		return nil, errors.New("ovh store server is required")
+	}
+	if provider.Ovh.OkmsID == "" {
+		return nil, errors.New("ovh store okmsID is required")
+	}
 
 	// Validate the provider's authentication method.
 	auth := provider.Ovh.Auth
