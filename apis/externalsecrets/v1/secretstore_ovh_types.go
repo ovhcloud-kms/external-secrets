@@ -18,23 +18,44 @@ package v1
 
 import esmeta "github.com/external-secrets/external-secrets/apis/meta/v1"
 
+// OvhProvider holds the configuration to synchronize secrets with OVHcloud's Secret Manager.
+// +optional
 type OvhProvider struct {
+	// specifies the OKMS server endpoint
+	// +required
 	Server      string  `json:"server"`
+	// specifies the OKMS ID
+	// +required
 	OkmsID      string  `json:"okmsid"`
+	// Enables or disables check-and-set (CAS)
+	// +optional
 	CasRequired *bool   `json:"casRequired,omitempty"`
+	// Authentication method (mtls or token)
+	// +required
 	Auth        OvhAuth `json:"auth"`
 }
 
+// OvhAuth tells the controller how to authenticate to OVHcloud's Secret Manager, either using mTLS or a token.
+// +required
 type OvhAuth struct {
+	// +optional
 	ClientMTLS  *OvhClientMTLS  `json:"mtls,omitempty"`
+	// +optional
 	ClientToken *OvhClientToken `json:"token,omitempty"`
 }
 
+// OvhClientMTLS defines the configuration required to authenticate to OVHcloud's Secret Manager using mTLS.
+// +optional
 type OvhClientMTLS struct {
+	// +required
 	ClientCertificate *esmeta.SecretKeySelector `json:"certSecretRef,omitempty"`
+	// +required
 	ClientKey         *esmeta.SecretKeySelector `json:"keySecretRef,omitempty"`
 }
 
+// OvhClientToken defines the configuration required to authenticate to OVHcloud's Secret Manager using a token.
+// +optional
 type OvhClientToken struct {
+	// +required
 	ClientTokenSecret *esmeta.SecretKeySelector `json:"tokenSecretRef,omitempty"`
 }
