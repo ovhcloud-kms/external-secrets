@@ -49,7 +49,7 @@ func TestGetSecretMap(t *testing.T) {
 			},
 		},
 		"Secret without data": {
-			errshould: "empty secret",
+			shouldmap: map[string][]byte{},
 			ref: esv1.ExternalSecretDataRemoteRef{
 				Key: "key",
 			},
@@ -113,10 +113,19 @@ func TestGetSecretMap(t *testing.T) {
 				kube: testCase.kube,
 			}
 			secret, err := cl.GetSecretMap(ctx, testCase.ref)
-			if testCase.errshould != "" && err != nil && err.Error() != testCase.errshould {
-				t.Error()
-			} else if len(testCase.shouldmap) != 0 && !reflect.DeepEqual(secret, testCase.shouldmap) {
-				t.Error()
+			if testCase.errshould != "" {
+				if err == nil {
+					t.Error()
+				} else if err.Error() != testCase.errshould {
+					t.Error()
+				}
+			} else {
+				if err != nil {
+					t.Error()
+				}
+				if !reflect.DeepEqual(secret, testCase.shouldmap) {
+					t.Error()
+				}
 			}
 		})
 	}

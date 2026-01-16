@@ -95,6 +95,8 @@ func TestNewClient(t *testing.T) {
 									},
 								},
 							},
+							Server: "server",
+							OkmsID: "okmsID",
 						},
 					},
 				},
