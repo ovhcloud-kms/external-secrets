@@ -1,3 +1,19 @@
+/*
+Copyright © 2025 ESO Maintainer Team
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package ovh
 
 import (
@@ -5,9 +21,10 @@ import (
 	"errors"
 	"regexp"
 
-	esv1 "github.com/external-secrets/external-secrets/apis/externalsecrets/v1"
 	"github.com/google/uuid"
 	"github.com/ovh/okms-sdk-go/types"
+
+	esv1 "github.com/external-secrets/external-secrets/apis/externalsecrets/v1"
 )
 
 // GetAllSecret retrieves multiple secrets from the Secret Manager.
@@ -15,7 +32,7 @@ import (
 // When path is set to "/" or left empty, the search starts from the Secret Manager root.
 func (cl *ovhClient) GetAllSecrets(ctx context.Context, ref esv1.ExternalSecretFind) (map[string][]byte, error) {
 	// List Secret Manager secrets.
-	secrets, err := getSecretsList(ctx, cl.okmsClient, cl.okmsId, ref.Path)
+	secrets, err := getSecretsList(ctx, cl.okmsClient, cl.okmsID, ref.Path)
 	if err != nil {
 		return map[string][]byte{}, err
 	}
@@ -38,7 +55,7 @@ func (cl *ovhClient) GetAllSecrets(ctx context.Context, ref esv1.ExternalSecretF
 
 // Retrieve secrets located under the specified path.
 // If the path is omitted, all secrets from the Secret Manager are returned.
-func getSecretsList(ctx context.Context, okmsClient OkmsClient, okmsId uuid.UUID, path *string) ([]string, error) {
+func getSecretsList(ctx context.Context, okmsClient OkmsClient, okmsID uuid.UUID, path *string) ([]string, error) {
 	var formatPath string
 
 	// if path ends with '/' (and is not "/"), returns an empty list.
@@ -59,7 +76,7 @@ func getSecretsList(ctx context.Context, okmsClient OkmsClient, okmsId uuid.UUID
 		formatPath = formatPath[:len(formatPath)-1]
 	}
 
-	return recursivelyGetSecretsList(ctx, okmsClient, okmsId, formatPath)
+	return recursivelyGetSecretsList(ctx, okmsClient, okmsID, formatPath)
 }
 
 // Recursively traverses the path to retrieve all secrets it contains.
@@ -95,7 +112,7 @@ func getSecretsList(ctx context.Context, okmsClient OkmsClient, okmsId uuid.UUID
 // For the path "path", GetSecretsMetadata returns:
 //
 //	["to/", "secret2", "secrets/"]
-func recursivelyGetSecretsList(ctx context.Context, okmsClient OkmsClient, okmsId uuid.UUID, path string) ([]string, error) {
+func recursivelyGetSecretsList(ctx context.Context, okmsClient OkmsClient, okmsID uuid.UUID, path string) ([]string, error) {
 	var secretsList []string
 	var secrets *types.GetMetadataResponse
 	var err error
@@ -105,7 +122,7 @@ func recursivelyGetSecretsList(ctx context.Context, okmsClient OkmsClient, okmsI
 	if path != "" && path[0] == '/' {
 		return []string{}, nil
 	}
-	secrets, err = okmsClient.GetSecretsMetadata(ctx, okmsId, path, true)
+	secrets, err = okmsClient.GetSecretsMetadata(ctx, okmsID, path, true)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +139,7 @@ func recursivelyGetSecretsList(ctx context.Context, okmsClient OkmsClient, okmsI
 				} else {
 					key = key[:len(key)-1]
 				}
-				toAppend, err = recursivelyGetSecretsList(ctx, okmsClient, okmsId, key)
+				toAppend, err = recursivelyGetSecretsList(ctx, okmsClient, okmsID, key)
 				if err != nil {
 					return nil, err
 				}

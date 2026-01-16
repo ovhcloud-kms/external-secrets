@@ -1,3 +1,20 @@
+/*
+Copyright © 2025 ESO Maintainer Team
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+// Package ovh implements a provider that enables synchronization with OVHcloud's Secret Manager.
 package ovh
 
 import (
@@ -8,42 +25,46 @@ import (
 	"net/http"
 	"reflect"
 
-	esv1 "github.com/external-secrets/external-secrets/apis/externalsecrets/v1"
-	esmeta "github.com/external-secrets/external-secrets/apis/meta/v1"
-	"github.com/external-secrets/external-secrets/runtime/esutils/resolvers"
 	"github.com/google/uuid"
 	"github.com/ovh/okms-sdk-go"
 	"github.com/ovh/okms-sdk-go/types"
 	kclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	esv1 "github.com/external-secrets/external-secrets/apis/externalsecrets/v1"
+	esmeta "github.com/external-secrets/external-secrets/apis/meta/v1"
+	"github.com/external-secrets/external-secrets/runtime/esutils/resolvers"
 )
 
+// Provider implements the ESO Provider interface for OVHcloud.
 type Provider struct {
 	SecretKeyRef func(ctx context.Context, c kclient.Client, storeKind string, esNamespace string, ref *esmeta.SecretKeySelector) (string, error)
 }
 
+// OkmsClient defines an interface for interacting with the OVH OKMS service.
+// It allows for both real API calls and mocking for unit tests.
 type OkmsClient interface {
-	GetSecretV2(ctx context.Context, okmsId uuid.UUID, path string, version *uint32, includeData *bool) (*types.GetSecretV2Response, error)
-	ListSecretV2(ctx context.Context, okmsId uuid.UUID, pageSize *uint32, pageCursor *string) (*types.ListSecretV2ResponseWithPagination, error)
-	PostSecretV2(ctx context.Context, okmsId uuid.UUID, body types.PostSecretV2Request) (*types.PostSecretV2Response, error)
-	PutSecretV2(ctx context.Context, okmsId uuid.UUID, path string, cas *uint32, body types.PutSecretV2Request) (*types.PutSecretV2Response, error)
-	DeleteSecretV2(ctx context.Context, okmsId uuid.UUID, path string) error
+	GetSecretV2(ctx context.Context, okmsID uuid.UUID, path string, version *uint32, includeData *bool) (*types.GetSecretV2Response, error)
+	ListSecretV2(ctx context.Context, okmsID uuid.UUID, pageSize *uint32, pageCursor *string) (*types.ListSecretV2ResponseWithPagination, error)
+	PostSecretV2(ctx context.Context, okmsID uuid.UUID, body types.PostSecretV2Request) (*types.PostSecretV2Response, error)
+	PutSecretV2(ctx context.Context, okmsID uuid.UUID, path string, cas *uint32, body types.PutSecretV2Request) (*types.PutSecretV2Response, error)
+	DeleteSecretV2(ctx context.Context, okmsID uuid.UUID, path string) error
 	WithCustomHeader(key, value string) *okms.Client
-	GetSecretsMetadata(ctx context.Context, okmsId uuid.UUID, path string, list bool) (*types.GetMetadataResponse, error)
+	GetSecretsMetadata(ctx context.Context, okmsID uuid.UUID, path string, list bool) (*types.GetMetadataResponse, error)
 }
 
 type ovhClient struct {
 	ovhStoreNameSpace string
 	ovhStoreKind      string
 	kube              kclient.Client
-	okmsId            uuid.UUID
+	okmsID            uuid.UUID
 	cas               bool
 	okmsClient        OkmsClient
 }
 
 var _ esv1.SecretsClient = &ovhClient{}
 
-// Create a new Provider client.
+// NewClient creates a new Provider client.
 func (p *Provider) NewClient(ctx context.Context, store esv1.GenericStore, kube kclient.Client, namespace string) (esv1.SecretsClient, error) {
 	// Validate Store before creating a client from it.
 	_, err := p.ValidateStore(store)
@@ -57,7 +78,7 @@ func (p *Provider) NewClient(ctx context.Context, store esv1.GenericStore, kube 
 
 	ovhStore := store.GetSpec().Provider.Ovh
 	// ovhClient configuration.
-	okmsId, err := uuid.Parse(ovhStore.OkmsID)
+	okmsID, err := uuid.Parse(ovhStore.OkmsID)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +92,7 @@ func (p *Provider) NewClient(ctx context.Context, store esv1.GenericStore, kube 
 		ovhStoreNameSpace: namespace,
 		ovhStoreKind:      store.GetKind(),
 		kube:              kube,
-		okmsId:            okmsId,
+		okmsID:            okmsID,
 		cas:               cas,
 	}
 
@@ -80,22 +101,22 @@ func (p *Provider) NewClient(ctx context.Context, store esv1.GenericStore, kube 
 		p.SecretKeyRef = resolvers.SecretKeyRef
 	}
 	if ovhStore.Auth.ClientToken != nil {
-		err = configureHttpTokenClient(ctx, p, cl,
+		err = configureHTTPTokenClient(ctx, p, cl,
 			ovhStore.Server, ovhStore.Auth.ClientToken)
 	} else if ovhStore.Auth.ClientMTLS != nil {
-		err = configureHttpMTLSClient(ctx, p, cl,
+		err = configureHTTPMTLSClient(ctx, p, cl,
 			ovhStore.Server, ovhStore.Auth.ClientMTLS)
 	}
 	return cl, err
 }
 
 // Configure the client to use the provided token for HTTP requests.
-func configureHttpTokenClient(ctx context.Context, p *Provider, cl *ovhClient, server string, clientToken *esv1.OvhClientToken) error {
+func configureHTTPTokenClient(ctx context.Context, p *Provider, cl *ovhClient, server string, clientToken *esv1.OvhClientToken) error {
 	token, err := getToken(ctx, p, cl, clientToken)
 	if err != nil {
 		return err
 	}
-	bearer_token := fmt.Sprintf("Bearer %s", token)
+	bearerToken := fmt.Sprintf("Bearer %s", token)
 
 	// Request a new OKMS client from the OVH SDK.
 	cl.okmsClient, err = okms.NewRestAPIClientWithHttp(server, &http.Client{})
@@ -107,7 +128,7 @@ func configureHttpTokenClient(ctx context.Context, p *Provider, cl *ovhClient, s
 	}
 
 	// Add a custom header.
-	if cl.okmsClient.WithCustomHeader("Authorization", bearer_token) == nil {
+	if cl.okmsClient.WithCustomHeader("Authorization", bearerToken) == nil {
 		return errors.New("failed to add custom header to okms client")
 	}
 	if cl.okmsClient.WithCustomHeader("Content-type", "application/json") == nil {
@@ -118,7 +139,7 @@ func configureHttpTokenClient(ctx context.Context, p *Provider, cl *ovhClient, s
 }
 
 // Configure the client to use mTLS for HTTP requests.
-func configureHttpMTLSClient(ctx context.Context, p *Provider, cl *ovhClient, server string, clientMTLS *esv1.OvhClientMTLS) error {
+func configureHTTPMTLSClient(ctx context.Context, p *Provider, cl *ovhClient, server string, clientMTLS *esv1.OvhClientMTLS) error {
 	tlsCert, err := getMTLS(ctx, p, cl, clientMTLS)
 	if err != nil {
 		return err
@@ -210,7 +231,7 @@ func getMTLS(ctx context.Context, p *Provider, cl *ovhClient, clientMTLS *esv1.O
 	return cert, err
 }
 
-// Statically validate the Secret Store specification.
+// ValidateStore statically validate the Secret Store specification.
 func (p *Provider) ValidateStore(store esv1.GenericStore) (admission.Warnings, error) {
 	// Nil checks.
 	if store == nil || reflect.ValueOf(store).IsNil() {
@@ -243,6 +264,7 @@ func (p *Provider) ValidateStore(store esv1.GenericStore) (admission.Warnings, e
 	return nil, nil
 }
 
+// Capabilities return the provider supported capabilities (ReadOnly, WriteOnly, ReadWrite).
 func (p *Provider) Capabilities() esv1.SecretStoreCapabilities {
 	return esv1.SecretStoreReadWrite
 }

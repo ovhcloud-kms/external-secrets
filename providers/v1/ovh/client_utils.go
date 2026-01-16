@@ -1,3 +1,19 @@
+/*
+Copyright © 2025 ESO Maintainer Team
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package ovh
 
 import (
@@ -7,13 +23,14 @@ import (
 	"fmt"
 	"strconv"
 
-	esv1 "github.com/external-secrets/external-secrets/apis/externalsecrets/v1"
 	"github.com/google/uuid"
 	"github.com/ovh/okms-sdk-go"
 	"github.com/tidwall/gjson"
+
+	esv1 "github.com/external-secrets/external-secrets/apis/externalsecrets/v1"
 )
 
-func getSecretWithOvhSDK(ctx context.Context, kmsClient OkmsClient, okmsId uuid.UUID, ref esv1.ExternalSecretDataRemoteRef) ([]byte, *uint32, error) {
+func getSecretWithOvhSDK(ctx context.Context, kmsClient OkmsClient, okmsID uuid.UUID, ref esv1.ExternalSecretDataRemoteRef) ([]byte, *uint32, error) {
 	// Check if the remoteRef key is empty.
 	if ref.Key == "" {
 		return []byte{}, nil, errors.New("spec.data.remoteRef.key cannot be empty")
@@ -32,7 +49,7 @@ func getSecretWithOvhSDK(ctx context.Context, kmsClient OkmsClient, okmsId uuid.
 
 	// Retrieve the KMS secret.
 	includeData := true
-	secret, err := kmsClient.GetSecretV2(ctx, okmsId, ref.Key, versionAddr, &includeData)
+	secret, err := kmsClient.GetSecretV2(ctx, okmsID, ref.Key, versionAddr, &includeData)
 	if err != nil {
 		return []byte{}, nil, handleOkmsError(err)
 	}
@@ -46,7 +63,7 @@ func getSecretWithOvhSDK(ctx context.Context, kmsClient OkmsClient, okmsId uuid.
 	if ref.Property == "" {
 		secretData, err = json.Marshal(secret.Version.Data)
 	} else {
-		secretData, err = getPropertyValue(secret.Version.Data, ref.Property)
+		secretData, err = getPropertyValue(*secret.Version.Data, ref.Property)
 	}
 
 	return secretData, secret.Metadata.CurrentVersion, err
@@ -73,7 +90,7 @@ func decodeSecretVersion(strVersion string) (*uint32, error) {
 }
 
 // Retrieve the value of the secret property.
-func getPropertyValue(data *map[string]any, property string) ([]byte, error) {
+func getPropertyValue(data map[string]any, property string) ([]byte, error) {
 	// Marshal data into bytes so it can be passed to gjson.Get.
 	secretData, err := json.Marshal(data)
 	if err != nil {

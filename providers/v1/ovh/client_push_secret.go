@@ -1,3 +1,19 @@
+/*
+Copyright © 2025 ESO Maintainer Team
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package ovh
 
 import (
@@ -6,11 +22,11 @@ import (
 	"encoding/json"
 	"errors"
 
-	esv1 "github.com/external-secrets/external-secrets/apis/externalsecrets/v1"
 	"github.com/google/uuid"
 	"github.com/ovh/okms-sdk-go/types"
-
 	corev1 "k8s.io/api/core/v1"
+
+	esv1 "github.com/external-secrets/external-secrets/apis/externalsecrets/v1"
 )
 
 // Create or update a secret.
@@ -27,7 +43,7 @@ func (cl *ovhClient) PushSecret(ctx context.Context, secret *corev1.Secret, data
 
 	// Check if the secret already exists.
 	// This determines which method to use: create or update.
-	remoteSecret, currentVersion, err := getSecretWithOvhSDK(ctx, cl.okmsClient, cl.okmsId, esv1.ExternalSecretDataRemoteRef{
+	remoteSecret, currentVersion, err := getSecretWithOvhSDK(ctx, cl.okmsClient, cl.okmsID, esv1.ExternalSecretDataRemoteRef{
 		Key: data.GetRemoteKey(),
 	})
 	if err != nil && !errors.Is(err, esv1.NoSecretErr) {
@@ -59,7 +75,7 @@ func (cl *ovhClient) PushSecret(ctx context.Context, secret *corev1.Secret, data
 	return pushNewSecret(
 		ctx,
 		cl.okmsClient,
-		cl.okmsId,
+		cl.okmsID,
 		secretToPush,
 		data.GetRemoteKey(),
 		currentVersion,
@@ -124,12 +140,12 @@ func buildSecretToPush(secret *corev1.Secret, data esv1.PushSecretData) (map[str
 }
 
 // This pushes the created/updated secret.
-func pushNewSecret(ctx context.Context, okmsClient OkmsClient, okmsId uuid.UUID, secretToPush map[string]any, path string, cas *uint32, secretExists bool) error {
+func pushNewSecret(ctx context.Context, okmsClient OkmsClient, okmsID uuid.UUID, secretToPush map[string]any, path string, cas *uint32, secretExists bool) error {
 	var err error
 
 	if !secretExists {
 		// Create a secret.
-		_, err = okmsClient.PostSecretV2(ctx, okmsId, types.PostSecretV2Request{
+		_, err = okmsClient.PostSecretV2(ctx, okmsID, types.PostSecretV2Request{
 			Path: path,
 			Version: types.SecretV2VersionShort{
 				Data: &secretToPush,
@@ -137,7 +153,7 @@ func pushNewSecret(ctx context.Context, okmsClient OkmsClient, okmsId uuid.UUID,
 		})
 	} else {
 		// Update a secret.
-		_, err = okmsClient.PutSecretV2(ctx, okmsId, path, cas, types.PutSecretV2Request{
+		_, err = okmsClient.PutSecretV2(ctx, okmsID, path, cas, types.PutSecretV2Request{
 			Version: &types.SecretV2VersionShort{
 				Data: &secretToPush,
 			},
