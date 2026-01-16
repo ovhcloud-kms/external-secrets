@@ -56,6 +56,9 @@ func getSecretWithOvhSDK(ctx context.Context, kmsClient OkmsClient, okmsID uuid.
 	if secret == nil {
 		return []byte{}, nil, esv1.NoSecretErr
 	}
+	if secret.Version == nil || secret.Version.Data == nil {
+		return []byte{}, nil, errors.New("secret version data is missing")
+	}
 
 	// Retrieve KMS Secret property if needed.
 	var secretData []byte
@@ -66,7 +69,11 @@ func getSecretWithOvhSDK(ctx context.Context, kmsClient OkmsClient, okmsID uuid.
 		secretData, err = getPropertyValue(*secret.Version.Data, ref.Property)
 	}
 
-	return secretData, secret.Metadata.CurrentVersion, err
+	var currentVersion *uint32
+	if secret.Metadata != nil {
+		currentVersion = secret.Metadata.CurrentVersion
+	}
+	return secretData, currentVersion, err
 }
 
 // Decode a secret version.

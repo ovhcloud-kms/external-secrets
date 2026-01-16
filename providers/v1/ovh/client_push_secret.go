@@ -120,11 +120,16 @@ func buildSecretToPush(secret *corev1.Secret, data esv1.PushSecretData) (map[str
 			secretValueToPush[key] = json.RawMessage(cleanJSON)
 		}
 	} else {
+		key := data.GetSecretKey()
+		value, ok := secret.Data[key]
+		if !ok {
+			return nil, errors.New("secretKey not found in secret data")
+		}
 		var decoded any
-		if err := json.Unmarshal(secret.Data[data.GetSecretKey()], &decoded); err != nil {
-			secretValueToPush[data.GetSecretKey()] = string(secret.Data[data.GetSecretKey()])
+		if err := json.Unmarshal(value, &decoded); err != nil {
+			secretValueToPush[key] = string(value)
 		} else {
-			secretValueToPush[data.GetSecretKey()] = json.RawMessage(secret.Data[data.GetSecretKey()])
+			secretValueToPush[key] = json.RawMessage(value)
 		}
 	}
 

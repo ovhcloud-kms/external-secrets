@@ -18,6 +18,7 @@ package ovh
 
 import (
 	"context"
+	"errors"
 
 	esv1 "github.com/external-secrets/external-secrets/apis/externalsecrets/v1"
 )
@@ -27,5 +28,9 @@ import (
 // when the associated Push Secret is deleted.
 func (cl *ovhClient) DeleteSecret(ctx context.Context, remoteRef esv1.PushSecretRemoteRef) error {
 	err := cl.okmsClient.DeleteSecretV2(ctx, cl.okmsID, remoteRef.GetRemoteKey())
+
+	if err != nil && errors.Is(handleOkmsError(err), esv1.NoSecretErr) {
+		return nil
+	}
 	return err
 }
