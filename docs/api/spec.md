@@ -1774,6 +1774,7 @@ string
 <a href="#external-secrets.io/v1.GitlabProvider">GitlabProvider</a>, 
 <a href="#external-secrets.io/v1.InfisicalProvider">InfisicalProvider</a>, 
 <a href="#external-secrets.io/v1.KubernetesServer">KubernetesServer</a>, 
+<a href="#external-secrets.io/v1.OvhClientMTLS">OvhClientMTLS</a>, 
 <a href="#external-secrets.io/v1.SecretServerProvider">SecretServerProvider</a>, 
 <a href="#external-secrets.io/v1.VaultProvider">VaultProvider</a>)
 </p>
@@ -8109,6 +8110,30 @@ External Secrets meta/v1.SecretKeySelector
 <td>
 </td>
 </tr>
+<tr>
+<td>
+<code>caBundle</code></br>
+<em>
+[]byte
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+</td>
+</tr>
+<tr>
+<td>
+<code>caProvider</code></br>
+<em>
+<a href="#external-secrets.io/v1.CAProvider">
+CAProvider
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="external-secrets.io/v1.OvhClientToken">OvhClientToken
@@ -8167,7 +8192,7 @@ string
 </em>
 </td>
 <td>
-<p>specifies the OKMS server endpoint</p>
+<p>specifies the OKMS server endpoint.</p>
 </td>
 </tr>
 <tr>
@@ -8178,7 +8203,7 @@ string
 </em>
 </td>
 <td>
-<p>specifies the OKMS ID</p>
+<p>specifies the OKMS ID.</p>
 </td>
 </tr>
 <tr>
@@ -8190,7 +8215,7 @@ bool
 </td>
 <td>
 <em>(Optional)</em>
-<p>Enables or disables check-and-set (CAS) (default: false)</p>
+<p>Enables or disables check-and-set (CAS) (default: false).</p>
 </td>
 </tr>
 <tr>
@@ -8202,7 +8227,7 @@ uint32
 </td>
 <td>
 <em>(Optional)</em>
-<p>Setup a timeout in seconds when requests to the KMS are made (default: 30)</p>
+<p>Setup a timeout in seconds when requests to the KMS are made (default: 30).</p>
 </td>
 </tr>
 <tr>
@@ -8215,7 +8240,7 @@ OvhAuth
 </em>
 </td>
 <td>
-<p>Authentication method (mtls or token)</p>
+<p>Authentication method (mtls or token).</p>
 </td>
 </tr>
 </tbody>
@@ -9235,6 +9260,8 @@ OvhProvider
 </em>
 </td>
 <td>
+<em>(Optional)</em>
+<p>Ovh configures this store to sync secrets using the OVHcloud provider.</p>
 </td>
 </tr>
 <tr>
